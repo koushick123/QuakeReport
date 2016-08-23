@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="wrap_content"
+    android:id="@+id/earthQuakeList"
+    android:layout_height="match_parent">
+
+   <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/text1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceListItemSmall"
+        android:gravity="center_vertical"
+        android:background="@drawable/magnitude_circle"
+        android:paddingLeft="@dimen/paddingleft"
+        android:paddingRight="@dimen/paddingright"
+        android:minHeight="?android:attr/listPreferredItemHeightSmall" />
+
+    <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/text2"
+        android:layout_width="@dimen/list_item_width"
+        android:layout_height="@dimen/list_item_height"
+        android:textAppearance="?android:attr/textAppearanceListItemSmall"
+        android:textColor="@color/textColorEarthquakeLocation"
+        android:gravity="top"
+        android:paddingLeft="@dimen/paddingleft"
+        android:paddingRight="@dimen/paddingright"
+        android:minHeight="?android:attr/listPreferredItemHeightSmall" />
+
+    <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/text3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceListItemSmall"
+        android:gravity="top"
+        android:paddingLeft="@dimen/paddingleft"
+        android:paddingRight="@dimen/paddingright"
+        android:minHeight="?android:attr/listPreferredItemHeightSmall" />
+</LinearLayout>
