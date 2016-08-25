@@ -9,11 +9,14 @@ public class EarthQuake {
     private double magnitude;
     private String location;
     private long date_time;
+    private String url;
 
-    public EarthQuake(double magnitude, String location, long date_time) {
+    public EarthQuake(double magnitude, String location, long date_time, String url) {
         this.magnitude = magnitude;
         this.location = location;
         this.date_time = date_time;
+        this.url = url;
+
     }
 
     public double getMagnitude() {
@@ -39,4 +42,13 @@ public class EarthQuake {
     public void setDate_time(long date_time) {
         this.date_time = date_time;
     }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
 }

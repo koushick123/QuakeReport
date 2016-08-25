@@ -60,7 +60,7 @@ public final class QueryUtils {
             {
                 JSONObject featureObj = features.getJSONObject(i);
                 JSONObject properties = featureObj.getJSONObject("properties");
-                earthquakes.add(new EarthQuake(properties.getDouble("mag"),properties.getString("place"),properties.getLong("time")));
+                earthquakes.add(new EarthQuake(properties.getDouble("mag"),properties.getString("place"),properties.getLong("time"),properties.getString("url")));
                 Log.d("URL == >",properties.getString("url"));
             }
 
