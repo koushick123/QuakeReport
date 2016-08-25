@@ -5,6 +5,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -47,6 +48,7 @@ public class EarthQuakeAdapter extends ArrayAdapter {
         TextView text1 = (TextView)listItem.findViewById(R.id.text1);
         TextView text2 = (TextView)listItem.findViewById(R.id.text2);
         TextView text3 = (TextView)listItem.findViewById(R.id.text3);
+        TextView toptext = (TextView)listItem.findViewById(R.id.topText);
 
         GradientDrawable gradientDrawable = (GradientDrawable)text1.getBackground();
 
@@ -91,7 +93,17 @@ public class EarthQuakeAdapter extends ArrayAdapter {
             gradientDrawable.setColor(ContextCompat.getColor(getContext(),R.color.magnitude1));
         }
         text1.setText(formatMag(earthQuake.getMagnitude()));
-        text2.setText(earthQuake.getLocation());
+        Log.d(" "+this,earthQuake.getLocation());
+        if(earthQuake.getLocation().indexOf(',') != -1) {
+            toptext.setText(earthQuake.getLocation().substring(0, earthQuake.getLocation().indexOf(',')));
+            text2.setText(earthQuake.getLocation().substring(earthQuake.getLocation().indexOf(',') + 1, earthQuake.getLocation().length()));
+        }
+        else
+        {
+            toptext.setText("Near");
+            text2.setText(earthQuake.getLocation().substring(earthQuake.getLocation().indexOf(',') + 1, earthQuake.getLocation().length()));
+        }
+
         formatTime(new Date(earthQuake.getDate_time()));
         text3.setText(formatDate(new Date(earthQuake.getDate_time()))+" "+formatTime(new Date(earthQuake.getDate_time())));
         return listItem;
