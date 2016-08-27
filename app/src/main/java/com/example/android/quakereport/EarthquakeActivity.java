@@ -15,22 +15,19 @@
  */
 package com.example.android.quakereport;
 
-import android.app.DownloadManager;
+import android.app.LoaderManager;
 import android.content.Intent;
+import android.content.Loader;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -42,92 +39,72 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.zip.Inflater;
 
-public class EarthquakeActivity extends AppCompatActivity {
+public class EarthquakeActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<List<EarthQuake>>{
 
     public static final String LOG_TAG = EarthquakeActivity.class.getName();
     private static final String USGS_URL = "http://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=earthquake&orderby=time&minmag=2&limit=10";
+    ListView earthquakeListView;
+    ProgressBar spinner;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.earthquake_activity);
-        new EarthQuakeRequest().execute(USGS_URL);
-        /*ListView earthquakeListView = (ListView)findViewById(R.id.list);
-        ArrayList<EarthQuake> earthQuakes = new ArrayList<EarthQuake>();
-        earthQuakes.add(new EarthQuake(6.2,"Loc1",1231213,"Url"));
-        final EarthQuakeAdapter adapter = new EarthQuakeAdapter(getBaseContext(),earthQuakes);
-        earthquakeListView.setAdapter(adapter);*/
+        getLoaderManager().initLoader(1,null,this).forceLoad();
+        spinner = (ProgressBar)findViewById(R.id.spinner);
+        spinner.setVisibility(View.VISIBLE);
     }
 
-    private class EarthQuakeRequest extends AsyncTask<String, Void, ArrayList<EarthQuake>>
+    @Override
+    public Loader<List<EarthQuake>> onCreateLoader(int i, Bundle bundle) {
+        Log.d(LOG_TAG,"initLoader");
+        return new EarthquakeLoader(getApplicationContext(),USGS_URL);
+    }
+
+    @Override
+    public void onLoadFinished(Loader<List<EarthQuake>> loader, List<EarthQuake> earthQuakes) {
+        Log.d(LOG_TAG,"onLoadFinished");
+        if(earthQuakes != null) {
+            UpdateUI(new ArrayList<EarthQuake>(earthQuakes));
+        }
+        else{
+            UpdateUI(new ArrayList<EarthQuake>());
+        }
+    }
+
+    @Override
+    public void onLoaderReset(Loader loader) {
+        Log.d(LOG_TAG,"onLoaderReset");
+        UpdateUI(new ArrayList<EarthQuake>());
+    }
+
+    private void UpdateUI(ArrayList<EarthQuake> earthQuakes)
     {
-        @Override
-        protected void onPostExecute(ArrayList<EarthQuake> earthQuakes) {
-            UpdateUI(earthQuakes);
-        }
-
-        @Override
-        protected ArrayList<EarthQuake> doInBackground(String... url) {
-
-            if(url[0] != null)
-            {
-                try {
-                URL usgs_url = new URL(url[0]);
-                HttpURLConnection httpURLConnection;
-                InputStream inputStream;
-                try {
-                    httpURLConnection = (HttpURLConnection) usgs_url.openConnection();
-                    httpURLConnection.setReadTimeout(10000);
-                    httpURLConnection.setConnectTimeout(15000);
-                    httpURLConnection.setRequestMethod("GET");
-                    httpURLConnection.connect();
-                    if (httpURLConnection.getResponseCode() == 200) {
-                        inputStream = httpURLConnection.getInputStream();
-                        String jsonResp = readFromStream(inputStream);
-                        return QueryUtils.extractEarthquakes(jsonResp);
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                }catch(MalformedURLException e){
-                    e.printStackTrace();
-                }
-            }
-            return null;
-        }
-
-        private void UpdateUI(ArrayList<EarthQuake> earthQuakes)
-        {
-            ListView earthquakeListView = (ListView)findViewById(R.id.list);
-            Log.d("EarthQuakes == ",""+earthQuakes.toString());
-            final EarthQuakeAdapter adapter = new EarthQuakeAdapter(getBaseContext(),earthQuakes);
+        earthquakeListView = (ListView)findViewById(R.id.list);
+        Log.d("EarthQuakes == ",""+earthQuakes.toString());
+        if(earthQuakes != null && earthQuakes.size() > 0) {
+            spinner.setVisibility(View.INVISIBLE);
+            final EarthQuakeAdapter adapter = new EarthQuakeAdapter(getBaseContext(), earthQuakes);
             earthquakeListView.setAdapter(adapter);
 
             earthquakeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
 
-                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(((EarthQuake)adapter.getItem(position)).getUrl()));
+                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(((EarthQuake) adapter.getItem(position)).getUrl()));
                     startActivity(browserIntent);
                 }
             });
         }
-    }
-
-    private static String readFromStream(InputStream inputStream) throws IOException {
-        StringBuilder output = new StringBuilder();
-        if (inputStream != null) {
-            InputStreamReader inputStreamReader = new InputStreamReader(inputStream, Charset.forName("UTF-8"));
-            BufferedReader reader = new BufferedReader(inputStreamReader);
-            String line = reader.readLine();
-            while (line != null) {
-                output.append(line);
-                line = reader.readLine();
-            }
+        else if(earthQuakes == null || earthQuakes.size() == 0)
+        {
+            TextView textView = (TextView)findViewById(R.id.placeholderText);
+            textView.setText(getResources().getString(R.string.emptyData));
+            spinner.setVisibility(View.INVISIBLE);
+            earthquakeListView.setEmptyView(textView);
         }
-        return output.toString();
     }
-
-
 }
