@@ -18,49 +18,116 @@ package com.example.android.quakereport;
 import android.app.DownloadManager;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.List;
 
 public class EarthquakeActivity extends AppCompatActivity {
 
     public static final String LOG_TAG = EarthquakeActivity.class.getName();
+    private static final String USGS_URL = "http://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=earthquake&orderby=time&minmag=2&limit=10";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.earthquake_activity);
-
-        // Create a fake list of earthquake locations.
-        /*ArrayList<EarthQuake> earthquakes = new ArrayList<>();
-        earthquakes.add(new EarthQuake("7.2","San Francisco","Feb 2, 2016"));
-        earthquakes.add(new EarthQuake("6.1","London","July 20, 2016"));
-        earthquakes.add(new EarthQuake("3.9","Tokyo","Nov 10, 2014"));
-        earthquakes.add(new EarthQuake("5.4","Mexico City","May 3, 2014"));
-        earthquakes.add(new EarthQuake("2.8","Moscow","Jan 31, 2013"));
-        earthquakes.add(new EarthQuake("1.6","Paris","Oct 30, 2011"));*/
-
-        // Find a reference to the {@link ListView} in the layout
-        ListView earthquakeListView = (ListView) findViewById(R.id.list);
-
-        // Create a new {@link ArrayAdapter} of earthquakes
-        final EarthQuakeAdapter adapter = new EarthQuakeAdapter(this, QueryUtils.extractEarthquakes());
-
-        // Set the adapter on the {@link ListView}
-        // so the list can be populated in the user interface
-        earthquakeListView.setAdapter(adapter);
-
-        earthquakeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
-                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(QueryUtils.extractEarthquakes().get(position).getUrl()));
-                startActivity(browserIntent);
-            }
-        });
+        new EarthQuakeRequest().execute(USGS_URL);
+        /*ListView earthquakeListView = (ListView)findViewById(R.id.list);
+        ArrayList<EarthQuake> earthQuakes = new ArrayList<EarthQuake>();
+        earthQuakes.add(new EarthQuake(6.2,"Loc1",1231213,"Url"));
+        final EarthQuakeAdapter adapter = new EarthQuakeAdapter(getBaseContext(),earthQuakes);
+        earthquakeListView.setAdapter(adapter);*/
     }
+
+    private class EarthQuakeRequest extends AsyncTask<String, Void, ArrayList<EarthQuake>>
+    {
+        @Override
+        protected void onPostExecute(ArrayList<EarthQuake> earthQuakes) {
+            UpdateUI(earthQuakes);
+        }
+
+        @Override
+        protected ArrayList<EarthQuake> doInBackground(String... url) {
+
+            if(url[0] != null)
+            {
+                try {
+                URL usgs_url = new URL(url[0]);
+                HttpURLConnection httpURLConnection;
+                InputStream inputStream;
+                try {
+                    httpURLConnection = (HttpURLConnection) usgs_url.openConnection();
+                    httpURLConnection.setReadTimeout(10000);
+                    httpURLConnection.setConnectTimeout(15000);
+                    httpURLConnection.setRequestMethod("GET");
+                    httpURLConnection.connect();
+                    if (httpURLConnection.getResponseCode() == 200) {
+                        inputStream = httpURLConnection.getInputStream();
+                        String jsonResp = readFromStream(inputStream);
+                        return QueryUtils.extractEarthquakes(jsonResp);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                }catch(MalformedURLException e){
+                    e.printStackTrace();
+                }
+            }
+            return null;
+        }
+
+        private void UpdateUI(ArrayList<EarthQuake> earthQuakes)
+        {
+            ListView earthquakeListView = (ListView)findViewById(R.id.list);
+            Log.d("EarthQuakes == ",""+earthQuakes.toString());
+            final EarthQuakeAdapter adapter = new EarthQuakeAdapter(getBaseContext(),earthQuakes);
+            earthquakeListView.setAdapter(adapter);
+
+            earthquakeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
+
+                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(((EarthQuake)adapter.getItem(position)).getUrl()));
+                    startActivity(browserIntent);
+                }
+            });
+        }
+    }
+
+    private static String readFromStream(InputStream inputStream) throws IOException {
+        StringBuilder output = new StringBuilder();
+        if (inputStream != null) {
+            InputStreamReader inputStreamReader = new InputStreamReader(inputStream, Charset.forName("UTF-8"));
+            BufferedReader reader = new BufferedReader(inputStreamReader);
+            String line = reader.readLine();
+            while (line != null) {
+                output.append(line);
+                line = reader.readLine();
+            }
+        }
+        return output.toString();
+    }
+
+
 }
