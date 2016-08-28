@@ -16,14 +16,15 @@
 package com.example.android.quakereport;
 
 import android.app.LoaderManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.Loader;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -48,12 +49,13 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        registerReceiver(getBroadcastRece(),new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
         setContentView(R.layout.earthquake_activity);
         spinner = (ProgressBar) findViewById(R.id.spinner);
         getInternetConnection();
         if (networkInfo != null && networkInfo.isConnected())
         {
-            getLoaderManager().initLoader(1, null, this).forceLoad();
+            getLoaderManager().initLoader(1, null, getEarthQuakeActObj()).forceLoad();
             spinner.setVisibility(View.VISIBLE);
         }
         else
@@ -61,6 +63,43 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
             earthquakeListView = (ListView)findViewById(R.id.list);
             setEmptyListView(NO_INT_DATA);
         }
+    }
+
+    private EarthquakeActivity getEarthQuakeActObj()
+    {
+        return EarthquakeActivity.this;
+    }
+
+    private BroadcastReceiver broadcastRece = new BroadcastReceiver()
+    {
+        @Override
+        public void onReceive(Context context, Intent intent)
+        {
+            Bundle extras = intent.getExtras();
+            if (extras != null) {
+                for (String key: extras.keySet())
+                {
+                    if(key.equalsIgnoreCase("networkInfo"))
+                    {
+                        NetworkInfo networkInfo = (NetworkInfo) extras.get(key);
+                        Log.d(LOG_TAG, "" + networkInfo.getState());
+                        if (networkInfo.getState() == NetworkInfo.State.CONNECTED) {
+                            if (earthquakeListView == null) {
+                                earthquakeListView = (ListView) findViewById(R.id.list);
+                            }
+                            setEmptyListView(EMPTY_TEXT);
+                            getLoaderManager().initLoader(1, null, getEarthQuakeActObj()).forceLoad();
+                            spinner.setVisibility(View.VISIBLE);
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    private BroadcastReceiver getBroadcastRece()
+    {
+        return this.broadcastRece;
     }
 
     @Override
@@ -78,10 +117,22 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
                     earthquakeListView = (ListView) findViewById(R.id.list);
                 }
                 setEmptyListView(EMPTY_TEXT);
-                getLoaderManager().initLoader(1, null, this).forceLoad();
+                getLoaderManager().initLoader(1, null, getEarthQuakeActObj()).forceLoad();
                 spinner.setVisibility(View.VISIBLE);
             }
         }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        deRegisterConnectionReceiver();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        deRegisterConnectionReceiver();
     }
 
     @Override
@@ -160,5 +211,19 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
             earthquakeListView.setEmptyView(textView);
         }
         spinner.setVisibility(View.INVISIBLE);
+    }
+
+    private void deRegisterConnectionReceiver()
+    {
+        if(getBroadcastRece() != null) {
+            try {
+                unregisterReceiver(getBroadcastRece());
+                this.broadcastRece = null;
+            }
+            catch (IllegalArgumentException illegal)
+            {
+                Log.e(LOG_TAG,illegal.getMessage());
+            }
+        }
     }
 }
