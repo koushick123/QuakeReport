@@ -17,4 +17,6 @@
     <string name="app_name">Quake Report</string>
     <string name="emptyData">No Earthquake data found</string>
     <string name="loadingData">Loading Earthquake data....</string>
+    <string name="noInternet">No Internet Connection</string>
+    <string name="blank"></string>
 </resources>

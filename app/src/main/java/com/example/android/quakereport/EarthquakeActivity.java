@@ -16,11 +16,14 @@
 package com.example.android.quakereport;
 
 import android.app.LoaderManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.Loader;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -29,18 +32,8 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.zip.Inflater;
 
 public class EarthquakeActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<List<EarthQuake>>{
 
@@ -48,14 +41,47 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
     private static final String USGS_URL = "http://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=earthquake&orderby=time&minmag=2&limit=10";
     ListView earthquakeListView;
     ProgressBar spinner;
+    ConnectivityManager connMgr;
+    NetworkInfo networkInfo;
+    String EMPTY_TEXT = "", NO_INT_DATA = "No Internet Data", NO_DATA_FOUND = "No Data Found";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.earthquake_activity);
-        getLoaderManager().initLoader(1,null,this).forceLoad();
-        spinner = (ProgressBar)findViewById(R.id.spinner);
-        spinner.setVisibility(View.VISIBLE);
+        spinner = (ProgressBar) findViewById(R.id.spinner);
+        getInternetConnection();
+        if (networkInfo != null && networkInfo.isConnected())
+        {
+            getLoaderManager().initLoader(1, null, this).forceLoad();
+            spinner.setVisibility(View.VISIBLE);
+        }
+        else
+        {
+            earthquakeListView = (ListView)findViewById(R.id.list);
+            setEmptyListView(NO_INT_DATA);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.d(LOG_TAG,"onResume");
+        getInternetConnection();
+        if (networkInfo != null && networkInfo.isConnected())
+        {
+            if (earthquakeListView == null || (earthquakeListView.getEmptyView() != null && !((TextView)earthquakeListView.getEmptyView()).getText().toString().equalsIgnoreCase(EMPTY_TEXT)))
+            {
+                Log.d(LOG_TAG,"Resume getting data");
+                if(earthquakeListView == null)
+                {
+                    earthquakeListView = (ListView) findViewById(R.id.list);
+                }
+                setEmptyListView(EMPTY_TEXT);
+                getLoaderManager().initLoader(1, null, this).forceLoad();
+                spinner.setVisibility(View.VISIBLE);
+            }
+        }
     }
 
     @Override
@@ -84,16 +110,18 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
     private void UpdateUI(ArrayList<EarthQuake> earthQuakes)
     {
         earthquakeListView = (ListView)findViewById(R.id.list);
-        Log.d("EarthQuakes == ",""+earthQuakes.toString());
-        if(earthQuakes != null && earthQuakes.size() > 0) {
-            spinner.setVisibility(View.INVISIBLE);
+        Log.d("EarthQuakes == ",""+earthQuakes);
+        if(earthQuakes != null && earthQuakes.size() > 0)
+        {
+            setEmptyListView(EMPTY_TEXT);
             final EarthQuakeAdapter adapter = new EarthQuakeAdapter(getBaseContext(), earthQuakes);
             earthquakeListView.setAdapter(adapter);
 
-            earthquakeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            earthquakeListView.setOnItemClickListener(new AdapterView.OnItemClickListener()
+            {
                 @Override
-                public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
-
+                public void onItemClick(AdapterView<?> adapterView, View view, int position, long l)
+                {
                     Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(((EarthQuake) adapter.getItem(position)).getUrl()));
                     startActivity(browserIntent);
                 }
@@ -101,10 +129,36 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
         }
         else if(earthQuakes == null || earthQuakes.size() == 0)
         {
-            TextView textView = (TextView)findViewById(R.id.placeholderText);
-            textView.setText(getResources().getString(R.string.emptyData));
-            spinner.setVisibility(View.INVISIBLE);
+            setEmptyListView(NO_DATA_FOUND);
+        }
+    }
+
+    private void getInternetConnection()
+    {
+        connMgr =  (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        networkInfo = connMgr.getActiveNetworkInfo();
+    }
+
+    private void setEmptyListView(String textSel)
+    {
+        if(textSel.equalsIgnoreCase(EMPTY_TEXT))
+        {
+            TextView textView = (TextView) findViewById(R.id.placeholderText);
+            textView.setText(getResources().getString(R.string.blank));
             earthquakeListView.setEmptyView(textView);
         }
+        else if(textSel.equalsIgnoreCase(NO_INT_DATA))
+        {
+            TextView textView = (TextView)findViewById(R.id.placeholderText);
+            textView.setText(getResources().getString(R.string.noInternet));
+            earthquakeListView.setEmptyView(textView);
+        }
+        else if(textSel.equalsIgnoreCase(NO_DATA_FOUND))
+        {
+            TextView textView = (TextView)findViewById(R.id.placeholderText);
+            textView.setText(getResources().getString(R.string.emptyData));
+            earthquakeListView.setEmptyView(textView);
+        }
+        spinner.setVisibility(View.INVISIBLE);
     }
 }

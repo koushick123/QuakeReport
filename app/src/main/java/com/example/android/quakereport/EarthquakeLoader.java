@@ -40,11 +40,6 @@ public class EarthquakeLoader extends AsyncTaskLoader<List<EarthQuake>> {
     @Override
     public List<EarthQuake> loadInBackground() {
         Log.d(""+this.getClass(),"loadInBackground");
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
         if (this.url != null) {
             try {
                 URL usgs_url = new URL(this.url);

@@ -90,7 +90,6 @@ public class EarthQuakeAdapter extends ArrayAdapter {
             gradientDrawable.setColor(ContextCompat.getColor(getContext(),R.color.magnitude1));
         }
         text1.setText(formatMag(earthQuake.getMagnitude()));
-        Log.d(" "+this,earthQuake.getLocation());
         if(earthQuake.getLocation().indexOf(',') != -1) {
             toptext.setText(earthQuake.getLocation().substring(0, earthQuake.getLocation().indexOf(',')));
             text2.setText(earthQuake.getLocation().substring(earthQuake.getLocation().indexOf(',') + 1, earthQuake.getLocation().length()));
