@@ -49,7 +49,6 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        registerReceiver(getBroadcastRece(),new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
         setContentView(R.layout.earthquake_activity);
         spinner = (ProgressBar) findViewById(R.id.spinner);
         getInternetConnection();
@@ -99,7 +98,7 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
 
     private BroadcastReceiver getBroadcastRece()
     {
-        return this.broadcastRece;
+        return getEarthQuakeActObj().broadcastRece;
     }
 
     @Override
@@ -107,7 +106,7 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
         super.onResume();
         Log.d(LOG_TAG,"onResume");
         getInternetConnection();
-        if (networkInfo != null && networkInfo.isConnected())
+        if (networkInfo != null && networkInfo.isConnectedOrConnecting())
         {
             if (earthquakeListView == null || (earthquakeListView.getEmptyView() != null && !((TextView)earthquakeListView.getEmptyView()).getText().toString().equalsIgnoreCase(EMPTY_TEXT)))
             {
@@ -121,18 +120,32 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
                 spinner.setVisibility(View.VISIBLE);
             }
         }
+        else
+        {
+            if(earthquakeListView != null) {
+                Log.d(LOG_TAG, ((TextView) earthquakeListView.getEmptyView()).getText().toString());
+            }
+        }
     }
 
     @Override
     protected void onPause() {
+        Log.d(LOG_TAG,"OnPause");
         super.onPause();
-        deRegisterConnectionReceiver();
     }
 
     @Override
     protected void onStop() {
+        Log.d(LOG_TAG,"OnStop");
         super.onStop();
         deRegisterConnectionReceiver();
+    }
+
+    @Override
+    protected void onStart() {
+        Log.d(LOG_TAG,"OnStart");
+        super.onStart();
+        getEarthQuakeActObj().registerReceiver(getBroadcastRece(),new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
     }
 
     @Override
@@ -218,7 +231,7 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
         if(getBroadcastRece() != null) {
             try {
                 unregisterReceiver(getBroadcastRece());
-                this.broadcastRece = null;
+                getEarthQuakeActObj().broadcastRece = null;
             }
             catch (IllegalArgumentException illegal)
             {
